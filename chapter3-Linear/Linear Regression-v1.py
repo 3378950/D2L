@@ -2,7 +2,7 @@ import torch
 import random
 
 def dataset(w, b, num_examples):
-    X = torch.normal(0, 1, (num_examples, len(w)))
+    X = torch.normal(0, 1, (num_examples, len(w))) # 100 * 2
     y = torch.matmul(X, w) + b
     y += torch.normal(0, 0.01, y.shape)
     return X, y.reshape((-1, 1))
@@ -14,6 +14,12 @@ def squared_loss(y_hat, y):
     return (y_hat - y.reshape(y_hat.shape)) ** 2 / 2
 
 def data_iter(batch_size, features, labels):
+    """ yield 的作用:
+        把一个函数变成一个 generator，带有 yield 的函数不再是一个普通函数，Python 解释器会将其视为一个 generator，
+        调用 fab(5) 不会执行 fab 函数，而是返回一个 iterable 对象！在 for 循环执行时，每次循环都会执行 fab 函数内部的代码，
+        执行到 yield b 时，fab 函数就返回一个迭代值，下次迭代时，代码从 yield b 的下一条语句继续执行，
+        而函数的本地变量看起来和上次中断执行前是完全一样的，于是函数继续执行，直到再次遇到 yield。
+    """
     num_examples = len(features)
     indices = list(range(num_examples))
     random.shuffle(indices)
@@ -32,7 +38,7 @@ def sgd(params, lr, batch_size):
 def train():
     true_w = torch.tensor([2, -3.4])
     true_b = 4.2
-    features, labels = dataset(true_w, true_b, 1000)
+    features, labels = dataset(true_w, true_b, 1000) # y = w1 * x1 + w2 * x2 + b
     model = LinearModel
     loss = squared_loss
     opim = sgd
@@ -43,7 +49,9 @@ def train():
     batch_size = 10
     for epoch in range(num_epochs):
         for X, y in data_iter(batch_size, features, labels):
-            ls = loss(model(X, w, b), y)
+            ls = loss(model(X, w, b), y) # X和y的小批量损失 （100）
+            # 因为l形状是(batch_size, 1)，而不是一个标量。l中的所有元素被加到一起，
+            # 并以此计算关于[w,b]的梯度
             ls.sum().backward()
             opim([w, b], lr, batch_size)
         with torch.no_grad():
